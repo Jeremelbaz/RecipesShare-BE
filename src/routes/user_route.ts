@@ -1,7 +1,8 @@
 import express from "express";
 const router = express.Router();
-import usersController from "../controllers/usersController";
-import { authMiddleware } from "../controllers/usersController"; // Middleware לאימות JWT
+import usersController from "../controllers/userController";
+import { authMiddleware } from "../controllers/userController";
+import ExtendedRequest from "../interface"
 
 /**
  * @swagger
