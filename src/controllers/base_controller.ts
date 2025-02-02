@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import { Model } from "mongoose";
+import ExtendedRequest from "../interface";
+
 
 class BaseController<T> {
     model: Model<T>;
@@ -74,13 +76,16 @@ class BaseController<T> {
         }
     }
 
-    async deleteItem(req: Request, res: Response) {
+    async deleteItem(req: ExtendedRequest, res: Response) {
         const id = req.params.id;
+        const userId = req.user?. _id;
         try {
-            const deletedItem = await this.model.findByIdAndDelete(id);
+            const deletedItem = await this.model.findByIdAndDelete({ _id: id, owner: userId });
+
             if (!deletedItem) {
-                return res.status(404).json({ message: "Not Found" });
+            return res.status(403).json({ message: "Unauthorized: You cannot delete this item." });
             }
+
             res.status(204).end();
         } catch (error) {
             console.error("Error in deleteItem:", error);
