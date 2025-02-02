@@ -3,40 +3,43 @@ import { Request, Response } from "express";
 import BaseController from "./base_controller";
 import { UploadedFile } from "express-fileupload";
 import path from "path";
+import ExtendedRequest from "../interface"
 
 class PostsController extends BaseController<IPost> {
     constructor() {
         super(postModel);
     }
 
-    async create(req: Request, res: Response) {
+    async create(req: ExtendedRequest, res: Response) { 
         try {
-            const { title, content } = req.body;
-            let imagePath: string | undefined = undefined;
-
-            if (req.files && req.files.image) {
-                const image = req.files.image as UploadedFile;
-                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                const filename = image.name + '-' + uniqueSuffix;
-                const uploadPath = path.join(__dirname, '..', 'uploads', filename);
-
-                await image.mv(uploadPath);
-                imagePath = `/uploads/${filename}`;
-            }
-
-            const newPost = await this.model.create({  // Use BaseController's create
-                title,
-                content,
-                owner: req.user._id,
-                image: imagePath,
-            });
-
-            res.status(201).json(newPost);
+          const { title, content } = req.body;
+          const ownerId = req.user?._id;
+          console.log(ownerId)
+          let imagePath: string | undefined = undefined;
+    
+          if (req.files && req.files.image) {
+            const image = req.files.image as UploadedFile;
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            const filename = image.name + '-' + uniqueSuffix;
+            const uploadPath = path.join(__dirname, '..', 'uploads', filename);
+    
+            await image.mv(uploadPath);
+            imagePath = `/uploads/${filename}`;
+          }
+          
+          const newPost = await this.model.create({ 
+            title,
+            content,
+            owner: ownerId, 
+            image: imagePath,
+          });
+    
+          res.status(201).json(newPost);
         } catch (error) {
-            console.error("Error creating post:", error);
-            res.status(400).json({ message: "Bad Request", error: error.message });
+          console.error("Error creating post:", error);
+          res.status(400).json({ message: "Bad Request", error: error.message });
         }
-    }
+      }
 
     async updateItem(req: Request, res: Response) { // Override updateItem for image handling
         try {
