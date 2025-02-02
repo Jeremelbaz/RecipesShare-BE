@@ -246,4 +246,70 @@ router.put("/:id", authMiddleware, postsController.updateItem);
  */
 router.delete("/:id", authMiddleware, postsController.deleteItem); // Removed .bind and added middleware
 
+/**
+ * @swagger
+ * /posts/{id}/like:
+ *    post:
+ *       summary: Like or unlike a post
+ *       description: Like or unlike a post by its ID
+ *       tags:
+ *          - Posts
+ *       security:
+ *          - bearerAuth: []
+ *       parameters:
+ *          - in: path
+ *            name: id
+ *            schema:
+ *               type: string
+ *            required: true
+ *            description: The ID of the post to like or unlike
+ *       responses:
+ *          200:
+ *             description: Post liked/unliked successfully
+ *             content:
+ *                application/json:
+ *                   schema:
+ *                      $ref: '#/components/schemas/Post'
+ *          401:
+ *             description: Unauthorized
+ *          404:
+ *             description: Post not found
+ *          500:
+ *             description: Server error
+ */
+router.post('/:id/like', authMiddleware, postsController.likePost); 
+
+/**
+ * @swagger
+ * /posts/{id}/analyze:
+ *    get:
+ *       summary: Analyze a recipe
+ *       description: Analyze a recipe post by its ID
+ *       tags:
+ *          - Posts
+ *       parameters:
+ *          - in: path
+ *            name: id
+ *            schema:
+ *               type: string
+ *            required: true
+ *            description: The ID of the post to analyze
+ *       responses:
+ *          200:
+ *             description: Recipe analysis
+ *             content:
+ *                application/json:
+ *                   schema:
+ *                      type: object
+ *                      properties:
+ *                         analysis:
+ *                            type: object
+ *                            description: The analysis of the recipe
+ *          404:
+ *             description: Post not found
+ *          500:
+ *             description: Server error
+ */
+router.get("/:id/analyze", postsController.analyzeRecipe);
+
 export default router;
