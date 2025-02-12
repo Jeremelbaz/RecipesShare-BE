@@ -89,7 +89,7 @@ import { authMiddleware } from "../controllers/userController";
  *       500:
  *         description: Server error
  */
-router.get("/", postsController.getAll); // Removed .bind
+router.get("/", postsController.getAll.bind(postsController));
 
 /**
  * @swagger
