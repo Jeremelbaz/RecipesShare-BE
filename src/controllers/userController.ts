@@ -59,8 +59,8 @@ const generateTokens = async (user: Document & IUser) => {
   if (!secret) throw new Error('Server error: missing secret.');
   const random = Math.random().toString();
   const accessToken = jwt.sign({ _id: user._id, random }, secret, { expiresIn: process.env.TOKEN_EXPIRES });
-  const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET;
-  if (!refreshTokenSecret) throw new Error('Server error: missing refresh token secret.');
+  const refreshTokenExpires = process.env.REFRESH_TOKEN_EXPIRES;
+  if (!refreshTokenExpires) throw new Error('Server error: missing refresh token expires.');
   const refreshToken = jwt.sign({ _id: user._id, random }, secret, { expiresIn: process.env.REFRESH_TOKEN_EXPIRES });
   return { accessToken, refreshToken };
 }
