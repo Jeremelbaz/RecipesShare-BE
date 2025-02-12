@@ -51,7 +51,8 @@ class BaseController<T> {
             res.status(201).json(item);
         } catch (error) {
             console.error("Error in create:", error);
-            res.status(400).json({ message: "Bad Request", error: error.message });
+            const errorMessage = (error as any).message || "Unknown error";
+            res.status(400).json({ message: "Bad Request", error: errorMessage });
         }
     }
 
@@ -72,7 +73,8 @@ class BaseController<T> {
             res.json(updatedItem);
         } catch (error) {
             console.error("Error in updateItem:", error);
-            res.status(400).json({ message: "Bad Request", error: error.message });
+            const errorMessage = (error as any).message || "Unknown error";
+            res.status(400).json({ message: "Bad Request", error: errorMessage });
         }
     }
 

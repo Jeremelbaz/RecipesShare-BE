@@ -31,7 +31,11 @@ export const analyzeRecipeHelper = async (content: string): Promise<string> => {
         throw new Error("No response from AI.");
       }
     } catch (error) {
-      throw new Error("Error analyzing recipe: " + error.message);
+      if (error instanceof Error) {
+        throw new Error("Error analyzing recipe: " + error.message);
+      } else {
+        throw new Error("Error analyzing recipe: " + String(error));
+      }
     }
 };
 

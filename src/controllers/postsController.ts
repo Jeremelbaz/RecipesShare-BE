@@ -38,7 +38,8 @@ class PostsController extends BaseController<IPost> {
           res.status(201).json(newPost);
         } catch (error) {
           console.error("Error creating post:", error);
-          res.status(400).json({ message: "Bad Request", error: error.message });
+          const errorMessage = (error as Error).message;
+          res.status(400).json({ message: "Bad Request", error: errorMessage });
         }
       }
 
@@ -66,7 +67,8 @@ class PostsController extends BaseController<IPost> {
             res.json(updatedPost);
         } catch (error) {
             console.error("Error in updateItem:", error);
-            res.status(400).json({ message: "Bad Request", error: error.message });
+            const errorMessage = (error as Error).message;
+            res.status(400).json({ message: "Bad Request", error: errorMessage });
         }
     }
 
