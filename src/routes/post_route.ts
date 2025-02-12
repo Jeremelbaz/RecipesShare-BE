@@ -118,7 +118,7 @@ router.get("/", postsController.getAll.bind(postsController));
  *       500:
  *         description: Server error
  */
-router.get("/:id", postsController.getById); 
+router.get("/:id", postsController.getById.bind(postsController)); 
 
 /**
  * @swagger
@@ -162,7 +162,7 @@ router.get("/:id", postsController.getById);
  *       500:
  *         description: Server error
  */
-router.post("/", authMiddleware, postsController.create);
+router.post("/", authMiddleware, postsController.create.bind(postsController));
 
 
 /**
@@ -216,7 +216,7 @@ router.post("/", authMiddleware, postsController.create);
  *       500:
  *         description: Server error
  */
-router.put("/:id", authMiddleware, postsController.updateItem); 
+router.put("/:id", authMiddleware, postsController.updateItem.bind(postsController)); 
 
 /**
  * @swagger
@@ -243,7 +243,7 @@ router.put("/:id", authMiddleware, postsController.updateItem);
  *       500:
  *         description: Server error
  */
-router.delete("/:id", authMiddleware, postsController.deleteItem); // Removed .bind and added middleware
+router.delete("/:id", authMiddleware, postsController.deleteItem.bind(postsController)); 
 
 /**
  * @swagger
@@ -276,7 +276,7 @@ router.delete("/:id", authMiddleware, postsController.deleteItem); // Removed .b
  *       500:
  *         description: Server error
  */
-router.post('/:id/like', authMiddleware, postsController.likePost); 
+router.post('/:id/like', authMiddleware, postsController.likePost.bind(postsController)); 
 
 /**
  * @swagger
@@ -309,6 +309,6 @@ router.post('/:id/like', authMiddleware, postsController.likePost);
  *       500:
  *         description: Server error
  */
-router.get("/:id/analyze", postsController.analyzeRecipe);
+router.get("/:id/analyze", postsController.analyzeRecipe.bind(postsController));
 
 export default router;
