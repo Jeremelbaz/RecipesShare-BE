@@ -49,7 +49,11 @@ const initApp = async (): Promise<Express> => {
     }); 
     return app;
   } catch (error) {
-    throw new Error("Failed to connect to MongoDB: " + error.message);
+    if (error instanceof Error) {
+      throw new Error("Failed to connect to MongoDB: " + error.message);
+    } else {
+      throw new Error("Failed to connect to MongoDB: An unknown error occurred");
+    }
   }
 };
 

@@ -22,7 +22,8 @@ class CommentsController extends BaseController<IComments> {
             res.status(201).json(newComment);
         } catch (error) {
             console.error("Error creating comment:", error);
-            res.status(400).json({ message: "Bad Request", error: error.message });
+            const errorMessage = error instanceof Error ? error.message : "Unknown error";
+            res.status(400).json({ message: "Bad Request", error: errorMessage });
         }
     }
 }
