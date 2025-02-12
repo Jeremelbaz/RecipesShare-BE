@@ -1,10 +1,10 @@
 {
-    "name": "finalproject",
+    "name": "recipeshare",
     "version": "1.0.0",
     "description": "Jeremy and Amit's final project!",
     "main": "app.js",
     "scripts": {
-        "start": "npx tsc && node dist/src/app.js",
+        "start": "npx tsc && node dist/app.js",
         "test": "jest --detectOpenHandles --forceExit --runInBand --config jest.config.ts",
         "testAuth": "jest --detectOpenHandles --forceExit auth.test.ts --config jest.config.ts",
         "testPost": "jest --detectOpenHandles --forceExit posts.test.ts --config jest.config.ts",
@@ -29,6 +29,7 @@
         "express": "^4.21.2",
         "express-fileupload": "^1.5.1",
         "express-session": "^1.18.1",
+        "google-auth-library": "^9.15.1",
         "jsonwebtoken": "^9.0.2",
         "mongoose": "^8.9.3",
         "multer": "^1.4.5-lts.1",
