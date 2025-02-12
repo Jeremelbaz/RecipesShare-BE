@@ -5,7 +5,6 @@ export interface IUser {
     password?: string;
     _id?: string;
     refreshToken?: string[];
-    username: string;
     profileImage?: string; // Path to the image file
     googleId?: string; 
 }
@@ -22,11 +21,6 @@ const userSchema = new mongoose.Schema<IUser>({
     refreshToken: {
         type: [String],
         default: [],
-    },
-    username: {
-        type: String,
-        required: true,
-        unique: true,
     },
     profileImage: {
         type: String,
