@@ -57,20 +57,12 @@ const googleSignin = async (req: Request, res: Response) => {
 const generateTokens = async (user: Document & IUser) => {
   const secret = process.env.TOKEN_SECRET;
   if (!secret) throw new Error('Server error: missing secret.');
-  const accessToken = jwt.sign({ _id: user._id }, secret, { expiresIn: process.env.TOKEN_EXPIRATION });
+  const random = Math.random().toString();
+  const accessToken = jwt.sign({ _id: user._id, random }, secret, { expiresIn: process.env.TOKEN_EXPIRES });
   const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET;
   if (!refreshTokenSecret) throw new Error('Server error: missing refresh token secret.');
-  const refreshToken = jwt.sign({ _id: user._id }, refreshTokenSecret);
-  if (user.refreshToken == null) {
-      user.refreshToken = [refreshToken];
-  } else {
-      user.refreshToken.push(refreshToken);
-  }
-  await user.save();
-  return {
-      'accessToken': accessToken,
-      'refreshToken': refreshToken
-  };
+  const refreshToken = jwt.sign({ _id: user._id, random }, secret, { expiresIn: process.env.REFRESH_TOKEN_EXPIRES });
+  return { accessToken, refreshToken };
 }
 
 const register = async (req: Request, res: Response) => {
@@ -95,7 +87,13 @@ const register = async (req: Request, res: Response) => {
               'password': encryptedPassword,
               'profileImage': profileImage
           });
-      const tokens = await generateTokens(rs2)
+      const tokens = await generateTokens(rs2);
+
+      // Atomic update to add the new refresh token
+      await userModel.updateOne(
+        { 'email': email },
+        { $push: { refreshToken: tokens.refreshToken } }
+      );
       res.status(201).send(
           {
               email: rs2.email,
