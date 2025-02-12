@@ -88,10 +88,9 @@ const register = async (req: Request, res: Response) => {
               'profileImage': profileImage
           });
       const tokens = await generateTokens(rs2);
-
       // Atomic update to add the new refresh token
       await userModel.updateOne(
-        { 'email': email },
+        { _id: rs2._id },
         { $push: { refreshToken: tokens.refreshToken } }
       );
       res.status(201).send(
