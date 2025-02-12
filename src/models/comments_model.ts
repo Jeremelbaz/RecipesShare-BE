@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 export interface IComments {
-    comment: string;
+    content: string;
     owner: string; // ref to the _id of the user that created the comment
     postId: string; // _id of the post that the comment is about
     createdAt: Date; 
@@ -9,7 +9,7 @@ export interface IComments {
 }
 
 const commentsSchema = new mongoose.Schema<IComments>({
-    comment: {
+    content: {
         type: String,
         required: true,
     },
