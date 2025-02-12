@@ -13,14 +13,14 @@ class PostsController extends BaseController<IPost> {
 
     async create(req: ExtendedRequest, res: Response) { 
         try {
-          const { title, content, postImage } = req.body;
+          const { title, content, imagePath } = req.body;
           const ownerId = req.user?._id;
           console.log(ownerId)
           const newPost = await this.model.create({ 
             title,
             content,
             owner: ownerId, 
-            image: postImage,
+            image: imagePath,
           });
     
           res.status(201).json(newPost);
