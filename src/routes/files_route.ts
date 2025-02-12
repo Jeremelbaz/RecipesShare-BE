@@ -1,4 +1,5 @@
-async const uploadFiles () =>{
+/**
+ * async const uploadFiles () =>{
     if (req.files && req.files.image) {
     const image = req.files.image as UploadedFile;
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -9,3 +10,4 @@ async const uploadFiles () =>{
     imagePath = `/uploads/${filename}`;
   }
 }
+**/
