@@ -13,26 +13,14 @@ class PostsController extends BaseController<IPost> {
 
     async create(req: ExtendedRequest, res: Response) { 
         try {
-          const { title, content } = req.body;
+          const { title, content, postImage } = req.body;
           const ownerId = req.user?._id;
           console.log(ownerId)
-          let imagePath: string | undefined = undefined;
-    
-          if (req.files && req.files.image) {
-            const image = req.files.image as UploadedFile;
-            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-            const filename = image.name + '-' + uniqueSuffix;
-            const uploadPath = path.join(__dirname, '..', 'uploads', filename);
-    
-            await image.mv(uploadPath);
-            imagePath = `/uploads/${filename}`;
-          }
-          
           const newPost = await this.model.create({ 
             title,
             content,
             owner: ownerId, 
-            image: imagePath,
+            image: postImage,
           });
     
           res.status(201).json(newPost);
