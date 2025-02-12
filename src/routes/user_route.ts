@@ -112,6 +112,7 @@ router.post("/register", usersController.register);
  *         description: Server error
  */
 router.post("/login", usersController.login);
+router.post("/google", usersController.googleSignin);
 
 /**
  * @swagger

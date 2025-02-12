@@ -38,15 +38,12 @@ db.on("error", (error) => console.error(error));
 db.once("open", () => console.log("Connected to database"));
 
 const initApp = async (): Promise<Express> => {
-  if (!process.env.DB_CONNECT || !process.env.DB_USER || !process.env.DB_PASS) {
+  if (!process.env.DB_CONNECT) {
     throw new Error("Missing environment variables: DB_CONNECT, DB_USER, or DB_PASS");
   }
 
   try {
-    await mongoose.connect(process.env.DB_CONNECT, {
-      user: process.env.DB_USER,
-      pass: process.env.DB_PASS,
-    }); 
+    await mongoose.connect(process.env.DB_CONNECT);
     return app;
   } catch (error) {
     if (error instanceof Error) {

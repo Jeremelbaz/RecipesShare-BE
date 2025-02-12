@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import userModel, { IUser } from '../models/users_model';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { OAuth2Client } from 'google-auth-library';
 import { Document } from 'mongoose';
 import ExtendedRequest from '../interface';
 
@@ -18,34 +19,88 @@ type UserDocument = Document & IUser & {
   _id: string;
 };
 
-const generateTokens = (userId: string): Tokens | null => {
-  const secret = process.env.TOKEN_SECRET;
-  if (!secret) return null;
-  const random = Math.random().toString();
-  const accessToken = jwt.sign({ _id: userId, random }, secret, { expiresIn: process.env.TOKEN_EXPIRES });
-  const refreshToken = jwt.sign({ _id: userId, random }, secret, { expiresIn: process.env.REFRESH_TOKEN_EXPIRES });
+const client = new OAuth2Client();
+const googleSignin = async (req: Request, res: Response) => {
+    console.log(req.body);
+    try {
+        const ticket = await client.verifyIdToken({
+            idToken: req.body.credential,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
+        const email = payload?.email;
+        if (email != null) {
+            let user = await userModel.findOne({ 'email': email });
+            if (user == null) {
+                user = await userModel.create(
+                    {
+                        'email': email,
+                        'password': '0',
+                        'imgUrl': payload?.picture
+                    });
+            }
+            const tokens = await generateTokens(user)
+            res.status(200).send(
+                {
+                    email: user.email,
+                    _id: user._id,
+                    profileImage: user.profileImage,
+                    ...tokens
+                })
+        }
+    } catch (err) {
+        return res.status(400).send((err as Error).message);
+    }
 
-  return { accessToken, refreshToken };
 };
 
+const generateTokens = async (user: Document & IUser) => {
+  const secret = process.env.TOKEN_SECRET;
+  if (!secret) throw new Error('Server error: missing secret.');
+  const accessToken = jwt.sign({ _id: user._id }, secret, { expiresIn: process.env.TOKEN_EXPIRATION });
+  const refreshToken = jwt.sign({ _id: user._id }, secret, {expiresIn:process.env.REFRESH_TOKEN_SECRET});
+  if (user.refreshToken == null) {
+      user.refreshToken = [refreshToken];
+  } else {
+      user.refreshToken.push(refreshToken);
+  }
+  await user.save();
+  return {
+      'accessToken': accessToken,
+      'refreshToken': refreshToken
+  };
+}
+
 const register = async (req: Request, res: Response) => {
+  const email = req.body.email;
+  const password = req.body.password;
+  const profileImage = req.body.profileImage;
+  if (!email || !password) {
+      return res.status(400).send("missing email or password");
+  }
   try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).send({ message: 'Email and password are required.' });
-    }
-
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    const user = await userModel.create({ email, password: hashedPassword });
-    res.status(201).send({ message: 'User registered successfully!', user });
-  } catch (err: any) {
-    if (err.code === 11000 && err.keyPattern?.email) {
-      return res.status(400).send({ message: 'Email already exists.' });
-    }
-    res.status(500).send({ message: 'Internal server error.', error: (err as Error).message });
+      const rs = await userModel.findOne({ 'email': email });
+      if (rs != null) {
+          return res.status(406).send("email already exists");
+      }
+      const salt = await bcrypt.genSalt(10);
+      const encryptedPassword = await bcrypt.hash(password, salt);
+      const rs2 = await userModel.create(
+          {
+              'email': email,
+              'password': encryptedPassword,
+              'profileImage': profileImage
+          });
+      const tokens = await generateTokens(rs2)
+      res.status(201).send(
+          {
+              email: rs2.email,
+              _id: rs2._id,
+              profileImage: rs2.profileImage,
+              ...tokens
+          })
+  } catch (err) {
+      return res.status(400).send("error missing email or password");
   }
 };
 
@@ -62,7 +117,7 @@ const login = async (req: Request, res: Response) => {
       return res.status(400).send({ message: 'Invalid email or password.' });
     }
 
-    const tokens = generateTokens(user._id);
+    const tokens = await generateTokens(user);
     if (!tokens) {
       return res.status(500).send({ message: 'Server error during token generation.' });
     }
@@ -106,7 +161,7 @@ const refresh = async (req: Request, res: Response) => {
     }
 
     const user = await verifyRefreshToken(refreshToken);
-    const tokens = generateTokens(user._id);
+    const tokens = generateTokens(user);
     if (!tokens) {
       return res.status(500).send({ message: 'Server error during token generation.' });
     }
@@ -114,7 +169,7 @@ const refresh = async (req: Request, res: Response) => {
     // Atomic update to add the new refresh token
     await userModel.updateOne(
       { _id: user._id },
-      { $push: { refreshToken: tokens.refreshToken } }
+      { $push: { refreshToken: (await tokens).refreshToken} }
     );
 
     res.status(200).send({ ...tokens, _id: user._id });
@@ -163,4 +218,4 @@ export const authMiddleware = (req: ExtendedRequest, res: Response, next: NextFu
   };
   
 
-export default { register, login, refresh, logout };
+export default {googleSignin, register, login, refresh, logout };
