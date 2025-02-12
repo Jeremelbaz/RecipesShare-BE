@@ -74,7 +74,7 @@ const generateTokens = async (user: Document & IUser) => {
 }
 
 const register = async (req: Request, res: Response) => {
-  
+  console.log(req.body);
   const email = req.body.email;
   const password = req.body.password;
   const profileImage = req.body.profileImage;
@@ -82,6 +82,7 @@ const register = async (req: Request, res: Response) => {
       return res.status(400).send("missing email or password");
   }
   try {
+      console.log(`email: ` + email + `password:  ` + password);
       const rs = await userModel.findOne({ 'email': email });
       if (rs != null) {
           return res.status(406).send("email already exists");
