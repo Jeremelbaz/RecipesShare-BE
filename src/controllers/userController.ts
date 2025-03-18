@@ -21,8 +21,6 @@ type UserDocument = Document & IUser & {
 
 const client = new OAuth2Client();
 const googleSignin = async (req: Request, res: Response) => {
-    console.log(req.body);
-    console.log(req.params);
     try {
         const ticket = await client.verifyIdToken({
             idToken: req.body.credential,
@@ -31,7 +29,7 @@ const googleSignin = async (req: Request, res: Response) => {
         const payload = ticket.getPayload();
         const email = payload?.email;
         if (email != null) {
-            console.log(`email : ${email}`)
+            console.log(`email of connected user: ${email}`)
             let user = await userModel.findOne({ 'email': email });
             if (user == null) {
                 user = await userModel.create(
