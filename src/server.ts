@@ -6,6 +6,7 @@ import express, { Express } from "express";
 import posts_route from "./routes/post_route";
 import comments_route from "./routes/comment_route";
 import user_route from "./routes/user_route";
+//import files_route from "./routes/files_route";
 import swaggerJSDoc from "swagger-jsdoc";
 import swaggerUI from "swagger-ui-express";
 import cors from 'cors';
@@ -17,6 +18,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use("/posts", posts_route);
 app.use("/comments", comments_route);
 app.use("/auth", user_route);
+//app.use("/file", files_route);
 
 const swaggerOptions: swaggerJSDoc.Options = {
   definition: {

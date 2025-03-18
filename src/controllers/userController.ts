@@ -22,6 +22,7 @@ type UserDocument = Document & IUser & {
 const client = new OAuth2Client();
 const googleSignin = async (req: Request, res: Response) => {
     console.log(req.body);
+    console.log(req.params);
     try {
         const ticket = await client.verifyIdToken({
             idToken: req.body.credential,
@@ -30,6 +31,7 @@ const googleSignin = async (req: Request, res: Response) => {
         const payload = ticket.getPayload();
         const email = payload?.email;
         if (email != null) {
+            console.log(`email : ${email}`)
             let user = await userModel.findOne({ 'email': email });
             if (user == null) {
                 user = await userModel.create(
@@ -209,7 +211,7 @@ export const authMiddleware = (req: ExtendedRequest, res: Response, next: NextFu
     if (!secret) {
       return res.status(500).send({ message: 'Server error: missing secret.' });
     }
-  
+
     try {
       const payload = jwt.verify(token, secret) as { _id: string };
       req.user = { _id: payload._id }; 
