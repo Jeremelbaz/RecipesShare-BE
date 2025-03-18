@@ -77,7 +77,7 @@ import { authMiddleware } from "../controllers/userController";
  *       500:
  *         description: Server error
  */
-router.get("/", commentsController.getAll); 
+router.get("/", commentsController.getAll.bind(commentsController)); 
 
 /**
  * @swagger
@@ -106,7 +106,7 @@ router.get("/", commentsController.getAll);
  *       500:
  *         description: Server error
  */
-router.get("/:id", commentsController.getById);
+router.get("/:id", commentsController.getById.bind(commentsController));
 
 /**
  * @swagger
@@ -149,7 +149,7 @@ router.get("/:id", commentsController.getById);
  *       500:
  *         description: Server error
  */
-router.post("/", authMiddleware, commentsController.create); 
+router.post("/", authMiddleware, commentsController.create.bind(commentsController)); 
 
 /**
  * @swagger
@@ -194,7 +194,7 @@ router.post("/", authMiddleware, commentsController.create);
  *       500:
  *         description: Server error
  */
-router.put("/:id", authMiddleware, commentsController.updateItem); 
+router.put("/:id", authMiddleware, commentsController.updateItem.bind(commentsController)); 
 
 /**
  * @swagger
@@ -221,6 +221,6 @@ router.put("/:id", authMiddleware, commentsController.updateItem);
  *       500:
  *         description: Server error
  */
-router.delete("/:id", authMiddleware, commentsController.deleteItem);
+router.delete("/:id", authMiddleware, commentsController.deleteItem.bind(commentsController));
 
 export default router;

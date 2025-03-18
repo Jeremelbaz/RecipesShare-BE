@@ -21,7 +21,6 @@ type UserDocument = Document & IUser & {
 
 const client = new OAuth2Client();
 const googleSignin = async (req: Request, res: Response) => {
-    console.log(req.body);
     try {
         const ticket = await client.verifyIdToken({
             idToken: req.body.credential,
@@ -30,6 +29,7 @@ const googleSignin = async (req: Request, res: Response) => {
         const payload = ticket.getPayload();
         const email = payload?.email;
         if (email != null) {
+            console.log(`email of connected user: ${email}`)
             let user = await userModel.findOne({ 'email': email });
             if (user == null) {
                 user = await userModel.create(
@@ -57,21 +57,16 @@ const googleSignin = async (req: Request, res: Response) => {
 const generateTokens = async (user: Document & IUser) => {
   const secret = process.env.TOKEN_SECRET;
   if (!secret) throw new Error('Server error: missing secret.');
-  const accessToken = jwt.sign({ _id: user._id }, secret, { expiresIn: process.env.TOKEN_EXPIRATION });
-  const refreshToken = jwt.sign({ _id: user._id }, secret, {expiresIn:process.env.REFRESH_TOKEN_SECRET});
-  if (user.refreshToken == null) {
-      user.refreshToken = [refreshToken];
-  } else {
-      user.refreshToken.push(refreshToken);
-  }
-  await user.save();
-  return {
-      'accessToken': accessToken,
-      'refreshToken': refreshToken
-  };
+  const random = Math.random().toString();
+  const accessToken = jwt.sign({ _id: user._id, random }, secret, { expiresIn: process.env.TOKEN_EXPIRES });
+  const refreshTokenExpires = process.env.REFRESH_TOKEN_EXPIRES;
+  if (!refreshTokenExpires) throw new Error('Server error: missing refresh token expires.');
+  const refreshToken = jwt.sign({ _id: user._id, random }, secret, { expiresIn: process.env.REFRESH_TOKEN_EXPIRES });
+  return { accessToken, refreshToken };
 }
 
 const register = async (req: Request, res: Response) => {
+  console.log(req.body);
   const email = req.body.email;
   const password = req.body.password;
   const profileImage = req.body.profileImage;
@@ -79,6 +74,7 @@ const register = async (req: Request, res: Response) => {
       return res.status(400).send("missing email or password");
   }
   try {
+      console.log(`email: ` + email + `password:  ` + password);
       const rs = await userModel.findOne({ 'email': email });
       if (rs != null) {
           return res.status(406).send("email already exists");
@@ -91,7 +87,12 @@ const register = async (req: Request, res: Response) => {
               'password': encryptedPassword,
               'profileImage': profileImage
           });
-      const tokens = await generateTokens(rs2)
+      const tokens = await generateTokens(rs2);
+      // Atomic update to add the new refresh token
+      await userModel.updateOne(
+        { _id: rs2._id },
+        { $push: { refreshToken: tokens.refreshToken } }
+      );
       res.status(201).send(
           {
               email: rs2.email,
@@ -100,6 +101,7 @@ const register = async (req: Request, res: Response) => {
               ...tokens
           })
   } catch (err) {
+      console.log(err);
       return res.status(400).send("error missing email or password");
   }
 };
@@ -207,7 +209,7 @@ export const authMiddleware = (req: ExtendedRequest, res: Response, next: NextFu
     if (!secret) {
       return res.status(500).send({ message: 'Server error: missing secret.' });
     }
-  
+
     try {
       const payload = jwt.verify(token, secret) as { _id: string };
       req.user = { _id: payload._id }; 
