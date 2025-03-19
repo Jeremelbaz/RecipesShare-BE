@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export const analyzeRecipeHelper = async (content: string): Promise<string> => {
   try{
-    const genAI = new GoogleGenerativeAI("AIzaSyAVyYdTtpoMzTCZLtC1f0M6HLELUsNZWbg"); 
+    const genAI = new GoogleGenerativeAI("api-key"); 
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const prompt = `
   Here is a recipe in free-text format:
