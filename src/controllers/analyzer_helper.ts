@@ -17,7 +17,7 @@ export const analyzeRecipeHelper = async (content: string): Promise<string> => {
   `;
   
   const result = await model.generateContent(prompt);
-  console.log("Gemini AI response:", result.response.text());
+  console.log("Gemini AI sent a response");
   return result.response.text();
 } catch (error) {
   console.error("Error fetching response from Gemini:", error);
