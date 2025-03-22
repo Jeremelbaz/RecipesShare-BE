@@ -1,8 +1,6 @@
 import postModel, { IPost } from "../models/posts_model";
 import { Request, Response } from "express";
 import BaseController from "./base_controller";
-import { UploadedFile } from "express-fileupload";
-import path from "path";
 import ExtendedRequest from "../interface";
 import { analyzeRecipeHelper } from "./analyzer_helper";
 
@@ -13,14 +11,14 @@ class PostsController extends BaseController<IPost> {
 
     async create(req: ExtendedRequest, res: Response) { 
         try {
-          const { title, content, imagePath } = req.body;
+          const { title, content, image } = req.body;
           const ownerId = req.user?._id;
           console.log(ownerId)
           const newPost = await this.model.create({ 
             title,
             content,
             owner: ownerId, 
-            image: imagePath,
+            image: image,
           });
     
           res.status(201).json(newPost);
@@ -30,35 +28,6 @@ class PostsController extends BaseController<IPost> {
           res.status(400).json({ message: "Bad Request", error: errorMessage });
         }
       }
-
-    async updateItem(req: Request, res: Response) { // Override updateItem for image handling
-        try {
-            const id = req.params.id;
-            const body = req.body;
-
-            if (req.files && req.files.image) {
-                const image = req.files.image as UploadedFile;
-                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                const filename = image.name + '-' + uniqueSuffix;
-                const uploadPath = path.join(__dirname, '..', 'uploads', filename);
-
-                await image.mv(uploadPath);
-                body.image = `/uploads/${filename}`;
-            }
-
-            const updatedPost = await this.model.findByIdAndUpdate(id, body, { new: true, runValidators: true }).populate('owner');
-
-            if (!updatedPost) {
-                return res.status(404).json({ message: "Not Found" });
-            }
-
-            res.json(updatedPost);
-        } catch (error) {
-            console.error("Error in updateItem:", error);
-            const errorMessage = (error as Error).message;
-            res.status(400).json({ message: "Bad Request", error: errorMessage });
-        }
-    }
 
     async likePost(req: ExtendedRequest, res: Response) {
         try {

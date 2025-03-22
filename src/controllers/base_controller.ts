@@ -18,7 +18,7 @@ class BaseController<T> {
                 res.json(items);
             }
             else if (ownerFilter) {
-                const items = await this.model.find({postId: ownerFilter}).populate('owner');
+                const items = await this.model.find({owner: ownerFilter}).populate('owner');
                 res.json(items);
             }
             else {

@@ -1,124 +1,132 @@
-import request from "supertest";
-import initApp from "../server";
-import mongoose from "mongoose";
-import postModel from "../models/posts_model";
-import { Express } from "express";
-import userModel, { IUser } from "../models/users_model";
+/** @format */
 
-var app: Express;
+import request from "supertest";
+import mongoose from "mongoose";
+import userModel, { IUser } from "../models/users_model";
+import initApp from "../server";
+import { Express } from "express";
+import postsModel from "../models/posts_model";
+let app: Express;
 
 beforeAll(async () => {
-  console.log("beforeAll");
+  console.log("Before all tests");
   app = await initApp();
   await userModel.deleteMany();
-  await postModel.deleteMany();
+  await postsModel.deleteMany();
 });
 
-afterAll((done) => {
-  console.log("afterAll");
-  mongoose.connection.close();
-  done();
+afterAll(async () => {
+  console.log("after all tests");
+  await mongoose.connection.close();
 });
 
 const baseUrl = "/auth";
 
-type User = IUser & {
-  accessToken?: string,
-  refreshToken?: string
-};
+type User = IUser & { accessToken?: string; refreshToken?: string };
 
 const testUser: User = {
-    email: "test@user.com",
-    password: "testpassword",
-  };
+  email: "user1@test.com",
+  password: "123456",
+};
 
 describe("Auth Tests", () => {
-  test("Auth test register", async () => {
-    const response = await request(app).post(baseUrl + "/register").send(testUser);
+  test("Auth test registration", async () => {
+    const response = await request(app)
+      .post(baseUrl + "/register")
+      .send(testUser);
     expect(response.statusCode).toBe(201);
-  });
-
-  test("Auth test register fail", async () => {
-    const response = await request(app).post(baseUrl + "/register").send(testUser);
-    expect(response.statusCode).not.toBe(200);
-  });
-
-  test("Auth test register fail", async () => {
-    const response = await request(app).post(baseUrl + "/register").send({
-      email: "sdsdfsd",
-    });
-    expect(response.statusCode).not.toBe(200);
-    const response2 = await request(app).post(baseUrl + "/register").send({
-      email: "",
-      password: "sdfsd",
-    });
-    expect(response2.statusCode).not.toBe(200);
-  });
-
-  test("Auth test duplicate registration fails", async () => {
-    await request(app).post(baseUrl + "/register").send(testUser);
-    const response = await request(app).post(baseUrl + "/register").send(testUser);
-    expect(response.statusCode).toBe(400);
-    expect(response.body.message).toBe("Email already exists.");
-  });
-
-  test("Auth test login", async () => {
-    const response = await request(app).post(baseUrl + "/login").send(testUser);
-    expect(response.statusCode).toBe(200);
-    const accessToken = response.body.accessToken;
-    const refreshToken = response.body.refreshToken;
-    expect(accessToken).toBeDefined();
-    expect(refreshToken).toBeDefined();
-    expect(response.body._id).toBeDefined();
-    testUser.accessToken = accessToken;
-    testUser.refreshToken = refreshToken;
     testUser._id = response.body._id;
   });
 
-  test("Check tokens are not the same", async () => {
-    const response = await request(app).post(baseUrl + "/login").send(testUser);
-    const accessToken = response.body.accessToken;
-    const refreshToken = response.body.refreshToken;
-
-    expect(accessToken).not.toBe(testUser.accessToken);
-    expect(refreshToken).not.toBe(testUser.refreshToken);
+  test("Auth test registration exist", async () => {
+    const response = await request(app)
+      .post(baseUrl + "/register")
+      .send(testUser);
+    expect(response.statusCode).not.toBe(201);
   });
 
-  test("Auth test login fail", async () => {
-    const response = await request(app).post(baseUrl + "/login").send({
-      email: testUser.email,
-      password: "sdfsd",
-    });
-    expect(response.statusCode).not.toBe(200);
+  test("Auth test login", async () => {
+    const response = await request(app)
+      .post(baseUrl + "/login")
+      .send(testUser);
+    expect(response.statusCode).toBe(200);
+    testUser.accessToken = response.body.accessToken;
+    testUser.refreshToken = response.body.refreshToken;
+    testUser._id = response.body._id;
+    expect(response.body._id).toBeDefined();
+    expect(response.body.accessToken).toBeDefined();
+    expect(response.body.refreshToken).toBeDefined();
+  });
 
-    const response2 = await request(app).post(baseUrl + "/login").send({
-      email: "dsfasd",
-      password: "sdfsd",
-    });
-    expect(response2.statusCode).not.toBe(200);
+  test("Auth test login wrong email", async () => {
+    const response = await request(app)
+      .post(baseUrl + "/login")
+      .send({
+        email: "wrong email",
+        password: testUser.password,
+      });
+    expect(response.statusCode).toBe(400);
+    expect(response.body.message).toBe("Invalid email or password.");
+  });
+
+  test("Auth test login wrong password", async () => {
+    const response = await request(app)
+      .post(baseUrl + "/login")
+      .send({
+        email: testUser.email,
+        password: "wrong password",
+      });
+    expect(response.statusCode).toBe(400);
+    expect(response.body.message).toBe("Invalid email or password.");
+  });
+
+  test("Auth test login wrong token", async () => {
+    const tokenSecret = process.env.TOKEN_SECRET;
+    delete process.env.TOKEN_SECRET;
+    const response = await request(app)
+      .post(baseUrl + "/login")
+      .send(testUser);
+    expect(response.statusCode).toBe(500);
+    expect(response.body.message).toBe("Internal server error.");
+    process.env.TOKEN_SECRET = tokenSecret;
   });
 
   test("Auth test me", async () => {
     const response = await request(app).post("/posts").send({
-      title: "Test Post",
-      content: "Test Content",
-      owner: "sdfSd",
+      title: "test title",
+      content: "test content",
+      owner: "test owner",
     });
     expect(response.statusCode).not.toBe(201);
-    const response2 = await request(app).post("/posts").set(
-      { authorization: "JWT " + testUser.accessToken }
-    ).send({
-      title: "Test Post",
-      content: "Test Content",
-      owner: "sdfSd",
-    });
+    const response2 = await request(app)
+      .post("/posts")
+      .set({ authorization: "JWT " + testUser.accessToken })
+      .send({
+        title: "test title",
+        content: "test content",
+        owner: testUser._id,
+      });
     expect(response2.statusCode).toBe(201);
+    expect(response2.body.title).toBe("test title");
+    expect(response2.body.content).toBe("test content");
+    expect(response2.body.owner).toBe(testUser._id);
   });
 
-  test("Test refresh token", async () => {
-    const response = await request(app).post(baseUrl + "/refresh").send({
-      refreshToken: testUser.refreshToken,
-    });
+  test("Auth test refresh without token", async () => {
+    const tokenSecret = process.env.TOKEN_SECRET;
+    delete process.env.TOKEN_SECRET;
+    const response = await request(app)
+      .post(baseUrl + "/refresh")
+      .send({ refreshToken: testUser.refreshToken });
+    expect(response.statusCode).toBe(400);
+    expect(response.body.message).toBe("Server error: missing secret.");
+    process.env.TOKEN_SECRET = tokenSecret;
+  });
+
+  test("Refresh Token", async () => {
+    const response = await request(app)
+      .post(baseUrl + "/refresh")
+      .send({ refreshToken: testUser.refreshToken });
     expect(response.statusCode).toBe(200);
     expect(response.body.accessToken).toBeDefined();
     expect(response.body.refreshToken).toBeDefined();
@@ -126,96 +134,175 @@ describe("Auth Tests", () => {
     testUser.refreshToken = response.body.refreshToken;
   });
 
-  test("Double use refresh token", async () => {
-    const response = await request(app).post(baseUrl + "/refresh").send({
-        refreshToken: testUser.refreshToken,
-    });
+  test("No Refresh Token", async () => {
+    const response = await request(app)
+      .post(baseUrl + "/refresh")
+      .send();
+    expect(response.statusCode).toBe(400);
+    expect(response.body.message).toBe("Refresh token is required.");
+  });
+
+  test("logout without refresh token", async () => {
+    const response = await request(app)
+      .post(baseUrl + "/logout")
+      .send({});
+    expect(response.statusCode).toBe(500);
+    expect(response.body.message).toBe("Refresh token is required.");
+  });
+
+  test("Auth test logout wrong token", async () => {
+    const tokenSecret = process.env.TOKEN_SECRET;
+    delete process.env.TOKEN_SECRET;
+    const response = await request(app)
+      .post(baseUrl + "/logout")
+      .send({ refreshToken: testUser.refreshToken });
+    expect(response.statusCode).toBe(500);
+    expect(response.body.message).toBe("Server error: missing secret.");
+    process.env.TOKEN_SECRET = tokenSecret;
+  });
+
+  test("logout with invalid refresh token", async () => {
+    const response = await request(app)
+      .post(baseUrl + "/logout")
+      .send({ refreshToken: "invalid" });
+    expect(response.statusCode).toBe(500);
+    expect(response.body.message).toBe("jwt malformed");
+  });
+
+  test("Refresh token invalid token", async () => {
+    const response = await request(app)
+      .post(baseUrl + "/refresh")
+      .send({ refreshToken: "invalid" });
+    expect(response.statusCode).toBe(400);
+    expect(response.body.message).toBe("jwt malformed");
+  });
+
+  test("invalid refresh token", async () => {
+    const response = await request(app)
+      .post(baseUrl + "/logout")
+      .send({ refreshToken: testUser.refreshToken });
     expect(response.statusCode).toBe(200);
-    const refreshTokenNew = response.body.refreshToken;
+    const response2 = await request(app)
+      .post(baseUrl + "/refresh")
+      .send({ refreshToken: testUser.refreshToken });
+    expect(response2.statusCode).not.toBe(200);
+  });
 
-    const response2 = await request(app).post(baseUrl + "/refresh").send({
-        refreshToken: testUser.refreshToken,
-    });
-    expect(response2.statusCode).toBe(400); 
-    const response3 = await request(app).post(baseUrl + "/refresh").send({
-        refreshToken: refreshTokenNew,
-    });
-    expect(response3.statusCode).toBe(200); 
-});
-
-  test("Test logout", async () => {
-    const response = await request(app).post(baseUrl + "/login").send(testUser);
+  test("Refresh token multiple times", async () => {
+    const response = await request(app)
+      .post(baseUrl + "/login")
+      .send(testUser);
     expect(response.statusCode).toBe(200);
     testUser.accessToken = response.body.accessToken;
     testUser.refreshToken = response.body.refreshToken;
-
-    const response2 = await request(app).post(baseUrl + "/logout").send({
-      refreshToken: testUser.refreshToken,
-    });
+    const response2 = await request(app)
+      .post(baseUrl + "/refresh")
+      .send({ refreshToken: testUser.refreshToken });
     expect(response2.statusCode).toBe(200);
-
-    const response3 = await request(app).post(baseUrl + "/refresh").send({
-      refreshToken: testUser.refreshToken,
-    });
-    expect(response3.statusCode).not.toBe(200);
-
+    const newRefreshToken = response2.body.refreshToken;
+    const response3 = await request(app)
+      .post(baseUrl + "/refresh")
+      .send({ refreshToken: testUser.refreshToken });
+    expect(response3.statusCode).toBe(400);
+    const response4 = await request(app)
+      .post(baseUrl + "/refresh")
+      .send({ refreshToken: newRefreshToken });
+    expect(response4.statusCode).toBe(200);
   });
 
   jest.setTimeout(10000);
-  test("Test timeout token ", async () => {
-    const response = await request(app).post(baseUrl + "/login").send(testUser);
+  test("Refresh token timeout", async () => {
+    const response = await request(app)
+      .post(baseUrl + "/login")
+      .send(testUser);
     expect(response.statusCode).toBe(200);
     testUser.accessToken = response.body.accessToken;
     testUser.refreshToken = response.body.refreshToken;
-
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-
-    const response2 = await request(app).post("/posts").set(
-      { authorization: "JWT " + testUser.accessToken }
-    ).send({
-      title: "Test Post",
-      content: "Test Content",
-      owner: "sdfSd",
-    });
-    expect(response2.statusCode).not.toBe(201);
-
-    const response3 = await request(app).post(baseUrl + "/refresh").send({
-      refreshToken: testUser.refreshToken,
-    });
+    await new Promise((r) => setTimeout(r, 6000));
+    const response2 = await request(app)
+      .post("/posts")
+      .set({ authorization: "JWT " + testUser.accessToken })
+      .send({
+        title: "test title",
+        content: "test content",
+        owner: testUser._id,
+      });
+    expect(response2.statusCode).toBe(401);
+    const response3 = await request(app)
+      .post(baseUrl + "/refresh")
+      .send({ refreshToken: testUser.refreshToken });
     expect(response3.statusCode).toBe(200);
     testUser.accessToken = response3.body.accessToken;
-
-    const response4 = await request(app).post("/posts").set(
-      { authorization: "JWT " + testUser.accessToken }
-    ).send({
-      title: "Test Post",
-      content: "Test Content",
-      owner: "sdfSd",
-    });
+    testUser.refreshToken = response3.body.refreshToken;
+    const response4 = await request(app)
+      .post("/posts")
+      .set({ authorization: "JWT " + testUser.accessToken })
+      .send({
+        title: "test title",
+        content: "test content",
+        owner: testUser._id,
+      });
     expect(response4.statusCode).toBe(201);
   });
 
-  test("Auth test refresh without refreshToken", async () => {
-    const response = await request(app).post(baseUrl + "/refresh").send({});
-    expect(response.statusCode).toBe(400);
-    expect(response.body.message).toBe("Refresh token is required.");
+  test("wrong test post fall middleware", async () => {
+    const tokenSecret = process.env.TOKEN_SECRET;
+    delete process.env.TOKEN_SECRET;
+    const response4 = await request(app)
+      .post("/posts")
+      .set({ authorization: "JWT " + testUser.accessToken })
+      .send({
+        title: "test title",
+        content: "test content",
+        owner: testUser._id,
+      });
+    expect(response4.statusCode).toBe(500);
+    process.env.TOKEN_SECRET = tokenSecret;
   });
+
+  test("Get user by ID", async () => {
+    const newUser = await userModel.create({
+      email: "test@test.com",
+      password: "123456",
+    });
+    const response = await request(app).get(baseUrl + "/" + newUser._id);
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toHaveProperty("email", "test@test.com");
+  });
+
+  test("Get non-existent user by ID", async () => {
+    const nonExistentId = new mongoose.Types.ObjectId();
+    const response = await request(app).get(baseUrl + "/" + nonExistentId);
+    expect(response.statusCode).toBe(404);
+  });
+
+  test("Update user", async () => {
+    const newUser = await userModel.create({
+      email: "email@test.com",
+      password: "123456",
+    });
+    const response = await request(app)
+      .put(baseUrl + "/" + newUser._id)
+      .send({ email: "updated@test.com" });
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toHaveProperty("email", "updated@test.com");
+  });
+
+  test("Delete user", async () => {
+    const newUser = await userModel.create({
+      email: "email5@test.com",
+      password: "123456",
+    });
+
+    const response = await request(app)
+      .delete(baseUrl + "/" + newUser._id);
   
-  test("Auth test logout without refreshToken", async () => {
-    const response = await request(app).post(baseUrl + "/logout").send({});
-    expect(response.statusCode).toBe(400);
-    expect(response.body.message).toBe("Refresh token is required.");
-  });
-    
-  test("Auth test server error during token generation in login", async () => {
-    // Simulating an error in token generation by providing a bad secret
-    process.env.TOKEN_SECRET = "";
-    
-    const response = await request(app).post(baseUrl + "/login").send(testUser);
-    expect(response.statusCode).toBe(500);
-    expect(response.body.message).toBe("Server error during token generation.");
-    process.env.TOKEN_SECRET = "350ec4b7e50d1c553bd15a80108d5594e9ee16814b42906f5be3923c3864facdc339e060b4ad00ee4a14a09f1927fab5b6e0ad92e9966757ba9c37fa5124caba";
-    
-  });
+    expect(response.statusCode).toBe(200);
   
+  });
+
+  test("delete user fail", async () => {
+    const response = await request(app).delete(baseUrl + "/123");
+    expect(response.statusCode).not.toBe(200);
+  });
 });

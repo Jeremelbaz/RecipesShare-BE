@@ -3,8 +3,10 @@ import userModel, { IUser } from '../models/users_model';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
-import { Document, Types } from 'mongoose';
+import mongoose, { Document, Types } from 'mongoose';
 import ExtendedRequest from '../interface';
+import postModel from '../models/posts_model';
+import commentModel from '../models/comments_model';
 
 type Tokens = {
   accessToken: string;
@@ -186,12 +188,35 @@ const refresh = async (req: Request, res: Response) => {
 const logout = async (req: Request, res: Response) => {
   try {
     const { refreshToken } = req.body;
+    console.log('Logout: Received refreshToken:', refreshToken);
+
     if (!refreshToken) {
-      return res.status(400).send({ message: 'Refresh token is required.' });
+      return res.status(500).send({ message: 'Refresh token is required.' });
     }
-    await verifyRefreshToken(refreshToken);
+
+    try {
+      await verifyRefreshToken(refreshToken);
+    } catch (verifyError) {
+      return res.status(500).send({ message: (verifyError as Error).message });
+    }
+
+    const user = await userModel.findOne({ refreshToken: refreshToken });
+    if (user) {
+      user.refreshToken = (user?.refreshToken ?? []).filter(
+        (token) => token !== refreshToken
+      );
+      try {
+        await user.save();
+      } catch (saveError) {
+        console.error('Logout: Error saving user:', saveError);
+      }
+    } else {
+      console.log('Logout: User not found with refreshToken.');
+    }
+
     res.status(200).send({ message: 'Logged out successfully.' });
   } catch (err: any) {
+    console.error('Logout: General error:', err);
     res.status(400).send({ message: err.message });
   }
 };
@@ -259,4 +284,27 @@ const updateUser = async (req: Request, res: Response) => {
     }
 };
 
-export default { googleSignin, register, login, refresh, logout, getUserById, getAllUsers, updateUser };
+const deleteUser = async (req: Request, res: Response) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.params.id);
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).send("User not found");
+    }
+    await postModel.deleteMany({ owner: user._id });
+    await commentModel.deleteMany({ owner: user._id });
+    await postModel.updateMany(
+      {},
+      { $pull: { comments: { owner: user._id } } }
+    );
+    const user1 = await userModel.findByIdAndDelete(userId);
+    if (user1) {
+      res.status(200).send("User deleted");
+    }
+  } catch (err) {
+    res.status(400).send(err);
+  }
+};
+
+
+export default { googleSignin, register, login, refresh, logout, deleteUser, getUserById, getAllUsers, updateUser };

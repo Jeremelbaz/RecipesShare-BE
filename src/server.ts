@@ -6,19 +6,27 @@ import express, { Express } from "express";
 import posts_route from "./routes/post_route";
 import comments_route from "./routes/comment_route";
 import user_route from "./routes/user_route";
-//import files_route from "./routes/files_route";
+import files_route from "./routes/files_route";
 import swaggerJSDoc from "swagger-jsdoc";
 import swaggerUI from "swagger-ui-express";
-import cors from 'cors';
+import path from "path";
 
 const app: Express = express();
-app.use(cors());
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "*");
+  res.setHeader("Access-Control-Allow-Headers", "*");
+
+  next();
+});
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use("/posts", posts_route);
 app.use("/comments", comments_route);
 app.use("/auth", user_route);
-//app.use("/file", files_route);
+app.use("/file", files_route);
+
+app.use("/users", express.static(path.join(process.cwd(), "public", "users")));
 
 const swaggerOptions: swaggerJSDoc.Options = {
   definition: {
@@ -42,7 +50,7 @@ db.once("open", () => console.log("Connected to database"));
 
 const initApp = async (): Promise<Express> => {
   if (!process.env.DB_CONNECT) {
-    throw new Error("Missing environment variables: DB_CONNECT, DB_USER, or DB_PASS");
+    throw new Error("Missing environment variables: DB_CONNECT");
   }
 
   try {

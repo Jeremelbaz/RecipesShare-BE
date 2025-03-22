@@ -265,6 +265,30 @@ router.get("/", usersController.getAllUsers);
 router.put("/:id", usersController.updateUser);
 
 
+/**
+ * @swagger
+ * /users/{id}:
+ *   delete:
+ *     summary: Delete user by ID
+ *     tags: [Auth]
+ *     description: Delete a user by their ID.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The user ID
+ *     responses:
+ *       200:
+ *         description: User deleted successfully
+ *       404:
+ *         description: User not found
+ *       400:
+ *         description: Bad request
+ */
+router.delete("/:id", usersController.deleteUser);
+
 // Example of a protected route
 /**
  * @swagger
@@ -283,6 +307,5 @@ router.put("/:id", usersController.updateUser);
 router.get("/protected", authMiddleware, (req, res) => {
     res.json({ message: "This is a protected route!" });
 });
-// for now we added it from the usersController but if we need we will add the middleware file
 
 export default router;
