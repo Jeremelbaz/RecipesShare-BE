@@ -181,6 +181,114 @@ router.post("/refresh", usersController.refresh);
  */
 router.post("/logout", usersController.logout);
 
+/**
+ * @swagger
+ * /users/{id}:
+ *   get:
+ *     summary: Get user by ID
+ *     tags: [Auth]
+ *     description: Retrieve a user by their ID.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The user ID
+ *     responses:
+ *       200:
+ *         description: User found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       404:
+ *         description: User not found
+ *       400:
+ *         description: Bad request
+ */
+router.get("/:id", usersController.getUserById);
+
+/**
+ * @swagger
+ * /users:
+ *   get:
+ *     summary: Get all users
+ *     tags: [Auth]
+ *     description: Retrieve a list of all users.
+ *     responses:
+ *       200:
+ *         description: A list of users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Bad request
+ */
+router.get("/", usersController.getAllUsers);
+
+/**
+ * @swagger
+ * /users/{id}:
+ *   put:
+ *     summary: Update user by ID
+ *     tags: [Auth]
+ *     description: Update a user's information by their ID.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The user ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/User'
+ *     responses:
+ *       200:
+ *         description: User updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       404:
+ *         description: User not found
+ *       400:
+ *         description: Bad request
+ */
+router.put("/:id", usersController.updateUser);
+
+
+/**
+ * @swagger
+ * /users/{id}:
+ *   delete:
+ *     summary: Delete user by ID
+ *     tags: [Auth]
+ *     description: Delete a user by their ID.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The user ID
+ *     responses:
+ *       200:
+ *         description: User deleted successfully
+ *       404:
+ *         description: User not found
+ *       400:
+ *         description: Bad request
+ */
+router.delete("/:id", usersController.deleteUser);
+
 // Example of a protected route
 /**
  * @swagger
@@ -199,6 +307,5 @@ router.post("/logout", usersController.logout);
 router.get("/protected", authMiddleware, (req, res) => {
     res.json({ message: "This is a protected route!" });
 });
-// for now we added it from the usersController but if we need we will add the middleware file
 
 export default router;

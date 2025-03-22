@@ -32,12 +32,12 @@ beforeAll(async () => {
     .send({
       title: "Test Post",
       content: "Test Content",
-      owner: "TestOwner",
+      owner: testUser._id,
     });
   const postId = res_create_post.body._id;
   console.log("Post created with ID:", postId);
-  testComments[0].postId = postId; // Assign the postId dynamically
-  testComments[0].owner = "" + testUser._id; // Assign the postId dynamically
+  testComments[0].postId = postId;
+  testComments[0].owner = "" + testUser._id;
   console.log("Test Comments:", testComments);
 });
 
