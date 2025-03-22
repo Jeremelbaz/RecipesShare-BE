@@ -36,7 +36,7 @@ const swaggerOptions: swaggerJSDoc.Options = {
       version: '1.0.0',
       description: 'REST server including authentication using JWT',
     },
-    servers: [{ url: `http://localhost:${process.env.PORT}` }], 
+    servers: [{ url: `http://localhost:${process.env.PORT}`}, {url: ` http://node14.cs.colman.ac.il:${process.env.PORT}` }, {url: `https://node14.cs.colman.ac.il:${process.env.HTTPS_PORT}`}], 
   },
   apis: ['./src/routes/*.ts'], 
 };
